@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { optimizeText } from '@/services/aiService';
 
 interface AIOptimizerProps {
   type: 'title' | 'description';
@@ -14,27 +15,32 @@ interface AIOptimizerProps {
 const AIOptimizer: React.FC<AIOptimizerProps> = ({ type, originalText, onOptimized }) => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizedText, setOptimizedText] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleOptimize = async () => {
-    setIsOptimizing(true);
-    
-    // 模拟AI优化过程
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    let optimized = '';
-    if (type === 'title') {
-      optimized = `【限时特价】${originalText} 正品保证 包邮到家`;
-    } else {
-      optimized = `${originalText}\n\n✨ 产品特色：\n• 正品保证，假一赔十\n• 顺丰包邮，24小时发货\n• 7天无理由退换\n• 专业客服，贴心服务\n\n🔥 限时优惠，数量有限，先到先得！`;
+    if (!originalText.trim()) {
+      setError('请先输入内容再进行AI优化');
+      return;
     }
+
+    setIsOptimizing(true);
+    setError(null);
     
-    setOptimizedText(optimized);
-    setIsOptimizing(false);
+    try {
+      const result = await optimizeText(originalText, type);
+      setOptimizedText(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'AI优化失败');
+      console.error('AI优化错误:', err);
+    } finally {
+      setIsOptimizing(false);
+    }
   };
 
   const handleApply = () => {
     onOptimized(optimizedText);
     setOptimizedText('');
+    setError(null);
   };
 
   return (
@@ -48,7 +54,7 @@ const AIOptimizer: React.FC<AIOptimizerProps> = ({ type, originalText, onOptimiz
       <CardContent className="space-y-4">
         <Button
           onClick={handleOptimize}
-          disabled={isOptimizing || !originalText}
+          disabled={isOptimizing || !originalText.trim()}
           className="w-full"
         >
           {isOptimizing ? (
@@ -63,6 +69,13 @@ const AIOptimizer: React.FC<AIOptimizerProps> = ({ type, originalText, onOptimiz
             </>
           )}
         </Button>
+
+        {error && (
+          <div className="flex items-center gap-2 p-3 text-red-600 bg-red-50 rounded-lg">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <span className="text-sm">{error}</span>
+          </div>
+        )}
         
         {optimizedText && (
           <div className="space-y-3">
