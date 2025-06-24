@@ -7,6 +7,10 @@ interface AIMessage {
 }
 
 export const optimizeText = async (text: string, type: 'title' | 'description'): Promise<string> => {
+  if (!AI_CONFIG.apiKey) {
+    throw new Error('请先设置API密钥');
+  }
+
   try {
     const systemPrompts = {
       title: '你是一个专业的电商文案专家，专门优化商品标题。请帮助优化商品标题，使其更有吸引力，包含关键词，适合闲鱼平台。要求简洁有力，突出卖点。',
@@ -29,6 +33,12 @@ export const optimizeText = async (text: string, type: 'title' | 'description'):
       }
     ];
 
+    console.log('发送AI请求:', {
+      url: `${AI_CONFIG.baseURL}/chat/completions`,
+      model: AI_CONFIG.model,
+      apiKeyExists: !!AI_CONFIG.apiKey
+    });
+
     const response = await fetch(`${AI_CONFIG.baseURL}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -43,11 +53,23 @@ export const optimizeText = async (text: string, type: 'title' | 'description'):
       }),
     });
 
+    console.log('API响应状态:', response.status);
+
     if (!response.ok) {
-      throw new Error(`API请求失败: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      console.error('API错误详情:', errorData);
+      
+      if (response.status === 401) {
+        throw new Error('API密钥无效，请检查密钥是否正确');
+      } else if (response.status === 429) {
+        throw new Error('请求过于频繁，请稍后重试');
+      } else {
+        throw new Error(`API请求失败: ${response.status} - ${errorData.error?.message || '未知错误'}`);
+      }
     }
 
     const data = await response.json();
+    console.log('API响应数据:', data);
     
     if (data.choices && data.choices.length > 0) {
       return data.choices[0].message.content.trim();
@@ -56,6 +78,10 @@ export const optimizeText = async (text: string, type: 'title' | 'description'):
     }
   } catch (error) {
     console.error('AI优化失败:', error);
-    throw new Error('AI优化服务暂时不可用，请稍后重试');
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error('AI优化服务暂时不可用，请稍后重试');
+    }
   }
 };
