@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Save, Plus } from 'lucide-react';
 import { Product, ProductFormData } from '@/types/product';
 import ImageUpload from './ImageUpload';
-import AIOptimizer from './AIOptimizer';
 
 interface ProductFormProps {
   product?: Product;
@@ -74,11 +73,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                   placeholder="请输入产品标题"
                   required
                 />
-                <AIOptimizer
-                  type="title"
-                  originalText={formData.title}
-                  onOptimized={(optimized) => updateField('title', optimized)}
-                />
               </div>
 
               <div>
@@ -90,11 +84,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onSave, onCancel }) 
                   placeholder="请输入产品描述文案"
                   rows={4}
                   required
-                />
-                <AIOptimizer
-                  type="description"
-                  originalText={formData.description}
-                  onOptimized={(optimized) => updateField('description', optimized)}
                 />
               </div>
 
